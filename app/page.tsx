@@ -184,7 +184,12 @@ export default function Home() {
               + Nueva
             </button>
           </div>
-          <PublicationResult result={result} platforms={platforms} />
+          <PublicationResult
+            result={result}
+            platforms={platforms}
+            imageBase64={imagePreview ?? imageBase64}
+            condition={condition}
+          />
         </div>
       )}
     </div>

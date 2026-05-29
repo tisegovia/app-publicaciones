@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1080">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --color-background: #0d0d1a;
+    --color-text-primary: #ffffff;
+    --color-text-secondary: rgba(255,255,255,0.72);
+    --color-price-bg: #e63946;
+    --color-accent: #f4a261;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { width: 1080px; height: 1920px; overflow: hidden; background: var(--color-background); }
+  body {
+    width: 1080px; height: 1920px;
+    overflow: hidden;
+    background: var(--color-background);
+    font-family: 'DM Sans', sans-serif;
+    transform-origin: top left;
+    position: relative;
+  }
+  .flyer {
+    width: 1080px; height: 1920px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* ── Image area ── */
+  .image-area {
+    position: relative;
+    width: 100%;
+    height: 1060px;
+    flex-shrink: 0;
+    overflow: hidden;
+    background: #111122;
+  }
+  .product-image-main {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+  }
+  .image-fade {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 400px;
+    background: linear-gradient(to bottom, transparent 0%, var(--color-background) 100%);
+    pointer-events: none;
+  }
+  .image-fade-left {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    width: 200px;
+    background: linear-gradient(to right, rgba(13,13,26,0.6) 0%, transparent 100%);
+    pointer-events: none;
+  }
+  /* ── Condition badge ── */
+  .product-condition-badge {
+    position: absolute;
+    top: 56px; left: 56px;
+    display: none;
+    padding: 16px 36px;
+    border-radius: 100px;
+    background: var(--color-accent);
+    color: #000;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 700;
+    font-size: 34px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+  /* ── Corner logo area ── */
+  .corner-accent {
+    position: absolute;
+    top: 0; right: 0;
+    width: 0; height: 0;
+    border-left: 180px solid transparent;
+    border-top: 180px solid rgba(255,255,255,0.06);
+  }
+  /* ── Info area ── */
+  .info-area {
+    flex: 1;
+    padding: 40px 72px 80px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+  /* decorative line */
+  .info-area::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 72px;
+    width: 80px; height: 4px;
+    background: var(--color-price-bg);
+    border-radius: 2px;
+  }
+  .price-row {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 36px;
+    margin-top: 20px;
+  }
+  .price-tag {
+    display: inline-flex;
+    align-items: center;
+    background: var(--color-price-bg);
+    padding: 18px 48px;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px rgba(230,57,70,0.45);
+  }
+  .product-price {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 100px;
+    color: #fff;
+    line-height: 1;
+    letter-spacing: -0.03em;
+  }
+  .product-title {
+    font-family: 'Archivo Black', sans-serif;
+    font-size: 76px;
+    color: var(--color-text-primary);
+    line-height: 1.05;
+    margin-bottom: 32px;
+    text-transform: uppercase;
+    letter-spacing: -0.01em;
+    word-break: break-word;
+  }
+  .product-description {
+    font-size: 42px;
+    color: var(--color-text-secondary);
+    line-height: 1.45;
+    flex: 1;
+    margin-bottom: 44px;
+    font-weight: 400;
+  }
+  .contact-line {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 28px 44px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.10);
+  }
+  .contact-icon { font-size: 44px; flex-shrink: 0; }
+  .product-contact {
+    font-size: 38px;
+    color: var(--color-text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+</style>
+</head>
+<body>
+<div class="flyer">
+  <div class="image-area">
+    <img class="product-image-main" src="%%IMAGE_MAIN_SRC%%" alt="Producto" style="display:%%IMAGE_MAIN_DISPLAY%%">
+    <div class="image-fade-left"></div>
+    <div class="image-fade"></div>
+    <div class="corner-accent"></div>
+    <span class="product-condition-badge" style="display:%%CONDITION_DISPLAY%%">%%CONDITION%%</span>
+  </div>
+
+  <div class="info-area">
+    <div class="price-row">
+      <div class="price-tag">
+        <span class="product-price">%%PRICE%%</span>
+      </div>
+    </div>
+    <h1 class="product-title">%%TITLE%%</h1>
+    <p class="product-description">%%DESCRIPTION%%</p>
+    <div class="contact-line">
+      <span class="contact-icon">📱</span>
+      <span class="product-contact">%%CONTACT%%</span>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  function scale(){
+    var s=Math.min((window.innerWidth||1080)/1080,(window.innerHeight||1920)/1920);
+    document.body.style.transform='scale('+s+')';
+    document.documentElement.style.cssText='width:'+(1080*s)+'px;height:'+(1920*s)+'px;overflow:hidden;';
+  }
+  scale();
+  window.addEventListener('resize',scale);
+})();
+</script>
+</body>
+</html>

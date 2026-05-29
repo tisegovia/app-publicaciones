@@ -46,6 +46,12 @@ export interface PriceReference {
   justificacion: string;
 }
 
+export interface FlyerData {
+  title: string;       // versión corta del título (máx 4 palabras, mayúsculas)
+  description: string; // descripción ultra corta para el flyer (máx 15 palabras)
+  price: string;       // precio formateado ej: "$23.456"
+}
+
 export interface GenerateResponse {
   producto: {
     nombre: string;
@@ -55,6 +61,7 @@ export interface GenerateResponse {
     caracteristicas: string[];
   };
   precios: PriceReference[];
+  flyerData?: FlyerData;
   mercadolibre?: MercadoLibreFields;
   amazon?: AmazonFields;
   facebook?: FacebookFields;

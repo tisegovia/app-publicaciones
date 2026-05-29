@@ -33,6 +33,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               >
                 Historial
               </Link>
+              <Link
+                href="/settings"
+                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                ⚙️
+              </Link>
             </nav>
           </div>
         </header>

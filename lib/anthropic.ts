@@ -92,7 +92,12 @@ Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
     "descripcion": "descripción",
     "precio_ars": 0,
     "categoria": "categoría OLX"
-  }` : ""}
+  },` : ""}
+  "flyerData": {
+    "title": "TÍTULO CORTO EN MAYÚSCULAS (máx 4 palabras clave del producto)",
+    "description": "Descripción atractiva ultra corta para flyer (máx 15 palabras)",
+    "price": "$XX.XXX (precio sugerido formateado, sin decimales, con puntos de miles, moneda ARS)"
+  }
 }
 
 Instrucciones específicas por plataforma:

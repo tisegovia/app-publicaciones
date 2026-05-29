@@ -45,7 +45,12 @@ export default function HistoryPage() {
             </p>
           </div>
         </div>
-        <PublicationResult result={selected.resultado} platforms={selected.plataformas} />
+        <PublicationResult
+          result={selected.resultado}
+          platforms={selected.plataformas}
+          imageBase64={selected.imageBase64}
+          condition={selected.condicion}
+        />
       </div>
     );
   }

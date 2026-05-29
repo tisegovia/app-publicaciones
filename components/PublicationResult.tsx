@@ -1,12 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { GenerateResponse, Platform } from "@/lib/types";
+import { GenerateResponse, Platform, ProductCondition } from "@/lib/types";
 import CopyButton from "./CopyButton";
+import FlyerGenerator from "./FlyerGenerator";
 
 interface Props {
   result: GenerateResponse;
   platforms: Platform[];
+  imageBase64: string;
+  condition: ProductCondition;
 }
 
 function Field({
@@ -99,7 +102,7 @@ const PLATFORM_CONFIG: Record<Platform, { label: string; icon: string; color: st
   olx: { label: "OLX Argentina", icon: "🏷️", color: "bg-green-50 border-green-300" },
 };
 
-export default function PublicationResult({ result, platforms }: Props) {
+export default function PublicationResult({ result, platforms, imageBase64, condition }: Props) {
   const [activeTab, setActiveTab] = useState<Platform>(platforms[0]);
 
   return (
@@ -189,6 +192,15 @@ export default function PublicationResult({ result, platforms }: Props) {
           </>
         )}
       </div>
+
+      {/* Flyer Generator */}
+      {result.flyerData && (
+        <FlyerGenerator
+          flyerData={result.flyerData}
+          imageBase64={imageBase64}
+          condition={condition}
+        />
+      )}
     </div>
   );
 }
