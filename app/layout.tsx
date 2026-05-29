@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
+import { Suspense } from "react";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
 
@@ -26,7 +27,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
       <body>
-        <NavBar />
+        <Suspense fallback={<div style={{ height: 56 }} />}>
+          <NavBar />
+        </Suspense>
         <main style={{ maxWidth: 880, margin: "0 auto", padding: "40px 20px 80px" }}>
           {children}
         </main>
