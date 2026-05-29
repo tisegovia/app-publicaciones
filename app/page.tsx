@@ -58,6 +58,15 @@ export default function Home() {
 
   useEffect(() => {
     setContact(localStorage.getItem("publigen_contact") ?? "");
+    // Clean up oversized history from older versions
+    try {
+      const raw = localStorage.getItem("publigen_history");
+      if (raw && raw.length > 2_000_000) {
+        localStorage.removeItem("publigen_history");
+      }
+    } catch { /* quota already exceeded — clear it */
+      localStorage.removeItem("publigen_history");
+    }
   }, []);
 
   function handleImagesChange(next: ImageFile[]) {
@@ -123,15 +132,15 @@ export default function Home() {
       }
       setFlyerHtml(generatedFlyerHtml);
 
-      // 3. Save to history
-      const previews = images.map((i) => i.preview);
+      // 3. Save to history (thumbnails only, max 20 entries)
+      const thumbs = await Promise.all(images.map((i) => compressImage(i.preview, 200)));
       const entry: HistoryEntry = {
         id: Date.now().toString(), fecha: new Date().toISOString(),
-        imageBase64: previews[0], imageBase64s: previews,
+        imageBase64: thumbs[0], imageBase64s: thumbs,
         plataformas: platforms, condicion: condition, resultado: data,
       };
       const history: HistoryEntry[] = JSON.parse(localStorage.getItem("publigen_history") ?? "[]");
-      localStorage.setItem("publigen_history", JSON.stringify([entry, ...history]));
+      localStorage.setItem("publigen_history", JSON.stringify([entry, ...history].slice(0, 20)));
 
       setStep("result");
     } catch (e: unknown) {
