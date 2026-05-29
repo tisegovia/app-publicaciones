@@ -48,7 +48,7 @@ export default function HistoryPage() {
         <PublicationResult
           result={selected.resultado}
           platforms={selected.plataformas}
-          imageBase64={selected.imageBase64}
+          images={selected.imageBase64s ?? [selected.imageBase64]}
           condition={selected.condicion}
         />
       </div>

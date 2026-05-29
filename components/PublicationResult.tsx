@@ -8,7 +8,7 @@ import FlyerGenerator from "./FlyerGenerator";
 interface Props {
   result: GenerateResponse;
   platforms: Platform[];
-  imageBase64: string;
+  images: string[];        // data URLs: [0]=main, [1]=detail1, [2]=detail2
   condition: ProductCondition;
 }
 
@@ -102,7 +102,7 @@ const PLATFORM_CONFIG: Record<Platform, { label: string; icon: string; color: st
   olx: { label: "OLX Argentina", icon: "🏷️", color: "bg-green-50 border-green-300" },
 };
 
-export default function PublicationResult({ result, platforms, imageBase64, condition }: Props) {
+export default function PublicationResult({ result, platforms, images, condition }: Props) {
   const [activeTab, setActiveTab] = useState<Platform>(platforms[0]);
 
   return (
@@ -197,7 +197,7 @@ export default function PublicationResult({ result, platforms, imageBase64, cond
       {result.flyerData && (
         <FlyerGenerator
           flyerData={result.flyerData}
-          imageBase64={imageBase64}
+          images={images}
           condition={condition}
         />
       )}

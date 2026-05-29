@@ -5,9 +5,7 @@ import { join } from "path";
 export const maxDuration = 30;
 
 interface ProductData {
-  imageBase64: string;
-  imageDetail1Base64?: string;
-  imageDetail2Base64?: string;
+  images: string[];          // [0]=main, [1]=detail1, [2]=detail2 — all data URLs
   price: string;
   title: string;
   description: string;
@@ -21,26 +19,25 @@ interface RequestBody {
   productData: ProductData;
 }
 
-/** Resize an image (base64) client-side is handled before calling this endpoint.
- *  Here we just ensure the data URL prefix is present. */
-function ensureDataUrl(base64: string, fallback: string): string {
-  if (!base64) return fallback;
-  if (base64.startsWith("data:")) return base64;
-  return `data:image/jpeg;base64,${base64}`;
+function ensureDataUrl(s: string): string {
+  if (!s) return "";
+  return s.startsWith("data:") ? s : `data:image/jpeg;base64,${s}`;
 }
 
-/** Extract inner HTML from a template file.
- *  Supports two formats:
- *  1. Files with <script type="__bundler/template">{"html":"..."}</script>
- *  2. Plain HTML files (used directly)
+/**
+ * Extract the inner HTML string from a bundler-wrapped template file.
+ * The wrapper format is:
+ *   <script type="__bundler/template">JSON_STRING</script>
+ * where JSON_STRING is a JSON-encoded HTML string (not an object).
+ * Falls back to returning the raw file if the script tag isn't found.
  */
 function extractTemplateHtml(filePath: string): string {
   const raw = readFileSync(filePath, "utf-8");
   const match = raw.match(/<script[^>]+type="__bundler\/template"[^>]*>([\s\S]*?)<\/script>/i);
   if (match) {
     try {
-      const parsed = JSON.parse(match[1].trim());
-      return parsed.html ?? parsed;
+      // The content is a JSON-encoded string (not an object)
+      return JSON.parse(match[1].trim()) as string;
     } catch {
       return raw;
     }
@@ -48,49 +45,96 @@ function extractTemplateHtml(filePath: string): string {
   return raw;
 }
 
-/** Inject product data into the template HTML using token replacement */
-function injectData(html: string, data: ProductData, template: string): string {
-  const mainImg = ensureDataUrl(data.imageBase64, "");
-  const detail1 = ensureDataUrl(data.imageDetail1Base64 ?? data.imageBase64, mainImg);
-  const detail2 = ensureDataUrl(data.imageDetail2Base64 ?? data.imageBase64, mainImg);
-
-  const conditionDisplay = data.showConditionBadge ? "inline-flex" : "none";
-  const conditionLabel = {
-    nuevo: "Nuevo",
-    usado: "Usado",
-    reacondicionado: "Reacond.",
-  }[data.condition.toLowerCase()] ?? data.condition;
-
-  let result = html;
-
-  // Images
-  result = result.replace(/%%IMAGE_MAIN_SRC%%/g, mainImg);
-  result = result.replace(/%%IMAGE_MAIN_DISPLAY%%/g, mainImg ? "block" : "none");
-
-  if (template === "tres-fotos") {
-    result = result.replace(/%%IMAGE_DETAIL_1_SRC%%/g, detail1);
-    result = result.replace(/%%IMAGE_DETAIL_2_SRC%%/g, detail2);
-  }
-
-  // Text fields
-  result = result.replace(/%%PRICE%%/g, escapeHtml(data.price));
-  result = result.replace(/%%TITLE%%/g, escapeHtml(data.title.toUpperCase()));
-  result = result.replace(/%%DESCRIPTION%%/g, escapeHtml(data.description));
-  result = result.replace(/%%CONTACT%%/g, escapeHtml(data.contact));
-
-  // Condition badge
-  result = result.replace(/%%CONDITION_DISPLAY%%/g, conditionDisplay);
-  result = result.replace(/%%CONDITION%%/g, escapeHtml(conditionLabel));
-
-  return result;
+/**
+ * Replace the src attribute of an <img> whose class contains `cls`.
+ * Also removes any style="display:none" from that specific img tag
+ * so the image becomes visible.
+ */
+function replaceImgSrc(html: string, cls: string, newSrc: string): string {
+  if (!newSrc) return html;
+  // Works regardless of attribute order; handles self-closing and non-self-closing img tags
+  return html.replace(
+    new RegExp(
+      `(<img(?=[^>]*\\bclass="[^"]*\\b${cls}\\b)[^>]*)` +   // capture <img ... up to >
+      `(\\s*(?:src|style)="[^"]*")*` +                        // skip any src/style attrs already
+      `([^>]*>)`,
+      "g"
+    ),
+    (match) => {
+      // Remove old src and display:none style, inject new src
+      let t = match
+        .replace(/\s*src="[^"]*"/g, "")
+        .replace(/\s*style="[^"]*display\s*:\s*none[^"]*"/gi, "");
+      // Insert src before the closing > or />
+      t = t.replace(/(\s*\/?>)$/, ` src="${newSrc}"$1`);
+      return t;
+    }
+  );
 }
 
-function escapeHtml(str: string): string {
-  return str
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+/**
+ * Replace the visible text content of the first element whose class contains `cls`.
+ * Handles both <tag class="cls">text</tag> and nested-but-only-text cases.
+ * Does NOT recurse into child elements to avoid replacing text in wrong places.
+ */
+function replaceElementText(html: string, cls: string, newText: string): string {
+  // Match opening tag with class, then capture everything up to the first child tag or close tag
+  return html.replace(
+    new RegExp(
+      `(<[a-zA-Z][^>]*\\bclass="[^"]*\\b${cls}\\b[^"]*"[^>]*>)` + // opening tag
+      `([^<]*)`,                                                      // text node (no children)
+      "g"
+    ),
+    (_, openTag, _oldText) => `${openTag}${newText}`
+  );
+}
+
+/**
+ * For the condition badge: change display:none → display:inline-block on
+ * the element with class product-condition-badge, and set its text.
+ */
+function injectConditionBadge(html: string, text: string): string {
+  // Change style="...display:none..." to display:inline-block on the badge element
+  html = html.replace(
+    /(<[^>]*\bclass="[^"]*\bproduct-condition-badge\b[^"]*"[^>]*\bstyle=")([^"]*)(")/gi,
+    (_, pre, style, post) => {
+      const newStyle = style.replace(/display\s*:\s*none/gi, "display:inline-block");
+      return `${pre}${newStyle}${post}`;
+    }
+  );
+  // Update the text content
+  return replaceElementText(html, "product-condition-badge", text);
+}
+
+function injectData(html: string, data: ProductData, template: string): string {
+  const [main = "", detail1 = "", detail2 = ""] = data.images.map(ensureDataUrl);
+  const fallback = main;
+
+  const conditionLabel =
+    { nuevo: "Nuevo", usado: "Usado", reacondicionado: "Reacond." }[
+      data.condition.toLowerCase()
+    ] ?? data.condition;
+
+  // ── Images ──────────────────────────────────────────────────────────────────
+  html = replaceImgSrc(html, "product-image-main", main || fallback);
+
+  if (template === "tres-fotos") {
+    html = replaceImgSrc(html, "product-image-detail-1", detail1 || fallback);
+    html = replaceImgSrc(html, "product-image-detail-2", detail2 || fallback);
+  }
+
+  // ── Text fields ──────────────────────────────────────────────────────────────
+  html = replaceElementText(html, "product-price", data.price);
+  html = replaceElementText(html, "product-title", data.title.toUpperCase());
+  html = replaceElementText(html, "product-description", data.description);
+  html = replaceElementText(html, "product-contact", data.contact);
+
+  // ── Condition badge ──────────────────────────────────────────────────────────
+  if (data.showConditionBadge) {
+    html = injectConditionBadge(html, conditionLabel);
+  }
+
+  return html;
 }
 
 export async function POST(req: NextRequest) {
@@ -101,7 +145,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Faltan parámetros" }, { status: 400 });
   }
 
-  const templateFile = template === "tres-fotos" ? "flyer-tres-fotos.html" : "flyer-una-foto.html";
+  const templateFile =
+    template === "tres-fotos" ? "flyer-tres-fotos.html" : "flyer-una-foto.html";
   const templatePath = join(process.cwd(), "public", "templates", templateFile);
 
   let html: string;
@@ -112,6 +157,5 @@ export async function POST(req: NextRequest) {
   }
 
   const injected = injectData(html, productData, template);
-
   return NextResponse.json({ html: injected });
 }

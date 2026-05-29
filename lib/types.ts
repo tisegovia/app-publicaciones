@@ -71,7 +71,8 @@ export interface GenerateResponse {
 export interface HistoryEntry {
   id: string;
   fecha: string;
-  imageBase64: string;
+  imageBase64: string;          // thumbnail (primera foto)
+  imageBase64s?: string[];      // todas las fotos (data URLs)
   plataformas: Platform[];
   condicion: ProductCondition;
   resultado: GenerateResponse;

@@ -5,13 +5,14 @@ import { FlyerData, ProductCondition } from "@/lib/types";
 
 interface Props {
   flyerData: FlyerData;
-  imageBase64: string;       // foto principal (data URL o base64 puro)
+  /** All product images as data URLs. [0]=main, [1]=detail1, [2]=detail2 */
+  images: string[];
   condition: ProductCondition;
 }
 
 type TemplateType = "una-foto" | "tres-fotos";
 
-/** Comprime una imagen a max 800px de ancho usando canvas */
+/** Comprime una imagen a maxWidth px usando canvas */
 async function compressImage(dataUrl: string, maxWidth = 800): Promise<string> {
   return new Promise((resolve) => {
     const img = new Image();
@@ -28,135 +29,23 @@ async function compressImage(dataUrl: string, maxWidth = 800): Promise<string> {
       resolve(canvas.toDataURL("image/jpeg", 0.82));
     };
     img.onerror = () => resolve(dataUrl);
-    img.src = dataUrl.startsWith("data:") ? dataUrl : `data:image/jpeg;base64,${dataUrl}`;
+    img.src = dataUrl;
   });
 }
 
-/** Componente de upload para fotos de detalle */
-function DetailUpload({
-  label, onSelect, preview,
-}: {
-  label: string;
-  onSelect: (dataUrl: string) => void;
-  preview: string | null;
-}) {
-  const ref = useRef<HTMLInputElement>(null);
-  const [drag, setDrag] = useState(false);
-
-  function handleFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = (e) => onSelect(e.target?.result as string);
-    reader.readAsDataURL(file);
-  }
-
-  return (
-    <div
-      className={`flex-1 border-2 border-dashed rounded-2xl cursor-pointer transition-all overflow-hidden ${drag ? "border-purple-400 bg-purple-50" : "border-gray-300 hover:border-purple-300 bg-gray-50"}`}
-      style={{ minHeight: 140 }}
-      onClick={() => ref.current?.click()}
-      onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
-      onDragLeave={() => setDrag(false)}
-      onDrop={(e) => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-    >
-      <input ref={ref} type="file" accept="image/*" className="hidden"
-        onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f); }} />
-      {preview ? (
-        <img src={preview} alt={label} className="w-full h-full object-cover" style={{ minHeight: 140 }} />
-      ) : (
-        <div className="flex flex-col items-center justify-center h-full py-6 px-3 text-center" style={{ minHeight: 140 }}>
-          <span className="text-2xl mb-1">📸</span>
-          <span className="text-xs text-gray-500 font-medium">{label}</span>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/** Thumbnail visual para selección de template */
-function TemplateThumbnail({ type, selected, onClick }: { type: TemplateType; selected: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`flex-1 rounded-2xl border-2 p-4 transition-all text-left ${selected ? "border-purple-500 bg-purple-50" : "border-gray-200 bg-white hover:border-gray-300"}`}
-    >
-      {/* Mini preview visual */}
-      <div className="rounded-xl overflow-hidden mb-3 bg-gray-900" style={{ aspectRatio: "9/16" }}>
-        {type === "una-foto" ? (
-          <div className="w-full h-full flex flex-col">
-            <div className="flex-1 bg-gray-700 relative">
-              <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                <span className="text-white text-2xl">🖼</span>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-1/3"
-                style={{ background: "linear-gradient(to bottom, transparent, #111827)" }} />
-            </div>
-            <div className="bg-gray-900 px-2 py-2 flex flex-col gap-1">
-              <div className="h-2 bg-red-500 rounded-full w-3/4" />
-              <div className="h-1.5 bg-gray-600 rounded-full w-full" />
-              <div className="h-1 bg-gray-700 rounded-full w-5/6 mt-1" />
-              <div className="h-2 bg-gray-800 border border-gray-700 rounded-lg mt-2 px-1 flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-gray-500 rounded-full" />
-                <div className="h-1 bg-gray-600 rounded flex-1" />
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="w-full h-full flex flex-col">
-            <div className="bg-gray-700 relative" style={{ flex: "0 0 42%" }}>
-              <div className="absolute inset-0 flex items-center justify-center opacity-30">
-                <span className="text-white text-xl">🖼</span>
-              </div>
-              <div className="absolute bottom-0 left-0 right-0 h-1/4"
-                style={{ background: "linear-gradient(to bottom, transparent, #111827)" }} />
-            </div>
-            <div className="flex gap-1 px-1 py-1" style={{ flex: "0 0 22%" }}>
-              <div className="flex-1 bg-gray-600 rounded-lg flex items-center justify-center opacity-60">
-                <span className="text-white text-xs">📷</span>
-              </div>
-              <div className="flex-1 bg-gray-600 rounded-lg flex items-center justify-center opacity-60">
-                <span className="text-white text-xs">📷</span>
-              </div>
-            </div>
-            <div className="flex-1 bg-gray-900 px-2 py-1 flex flex-col gap-1">
-              <div className="h-2 bg-red-500 rounded-full w-2/3" />
-              <div className="h-1.5 bg-gray-600 rounded-full w-full" />
-              <div className="h-1 bg-gray-700 rounded-full w-5/6" />
-              <div className="h-2 bg-gray-800 border border-gray-700 rounded-lg mt-1 px-1 flex items-center gap-1">
-                <div className="w-1.5 h-1.5 bg-gray-500 rounded-full" />
-                <div className="h-1 bg-gray-600 rounded flex-1" />
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        {selected && <span className="text-purple-500 text-sm font-bold">✓</span>}
-        <span className="text-sm font-semibold text-gray-800">
-          {type === "una-foto" ? "1 foto" : "3 fotos"}
-        </span>
-      </div>
-      <p className="text-xs text-gray-400 mt-0.5">
-        {type === "una-foto" ? "Foto principal grande" : "Principal + 2 detalles"}
-      </p>
-    </button>
-  );
-}
-
-export default function FlyerGenerator({ flyerData, imageBase64, condition }: Props) {
-  const [template, setTemplate] = useState<TemplateType>("una-foto");
-  const [detail1, setDetail1] = useState<string | null>(null);
-  const [detail2, setDetail2] = useState<string | null>(null);
+export default function FlyerGenerator({ flyerData, images, condition }: Props) {
   const [contact, setContact] = useState("");
   const [loading, setLoading] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [flyerHtml, setFlyerHtml] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  // Auto-select template based on image count
+  const template: TemplateType = images.length >= 3 ? "tres-fotos" : "una-foto";
 
   // Pre-fill contact from settings
   useEffect(() => {
-    const saved = localStorage.getItem("publigen_contact") ?? "";
-    setContact(saved);
+    setContact(localStorage.getItem("publigen_contact") ?? "");
   }, []);
 
   const conditionLabels: Record<ProductCondition, string> = {
@@ -171,13 +60,10 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
     setFlyerHtml(null);
 
     try {
-      // Comprimir imagen principal
-      const mainDataUrl = imageBase64.startsWith("data:")
-        ? imageBase64
-        : `data:image/jpeg;base64,${imageBase64}`;
-      const compressed = await compressImage(mainDataUrl, 800);
-      const d1 = detail1 ? await compressImage(detail1, 800) : undefined;
-      const d2 = detail2 ? await compressImage(detail2, 800) : undefined;
+      // Comprimir todas las imágenes
+      const compressed = await Promise.all(
+        images.map((img) => compressImage(img, 800))
+      );
 
       const res = await fetch("/api/flyer/generate", {
         method: "POST",
@@ -185,9 +71,7 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
         body: JSON.stringify({
           template,
           productData: {
-            imageBase64: compressed,
-            imageDetail1Base64: d1,
-            imageDetail2Base64: d2,
+            images: compressed,
             price: flyerData.price,
             title: flyerData.title,
             description: flyerData.description,
@@ -214,20 +98,19 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
     try {
       const { toPng } = await import("html-to-image");
 
-      // Crear iframe oculto a tamaño real
+      // Crear iframe oculto a tamaño real (1080×1920)
       const iframe = document.createElement("iframe");
       iframe.style.cssText =
         "position:fixed;left:-9999px;top:-9999px;width:1080px;height:1920px;border:none;visibility:hidden;";
       document.body.appendChild(iframe);
 
-      await new Promise<void>((resolve, reject) => {
+      await new Promise<void>((resolve) => {
         iframe.onload = () => resolve();
-        iframe.onerror = reject;
         iframe.srcdoc = flyerHtml!;
-        setTimeout(resolve, 3000); // timeout fallback
+        setTimeout(resolve, 3500); // fallback
       });
 
-      // Esperar fuentes
+      // Esperar fuentes / render
       await new Promise((r) => setTimeout(r, 800));
 
       const node = iframe.contentDocument?.documentElement;
@@ -240,7 +123,7 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
         style: { transform: "none" },
       });
 
-      const productSlug = flyerData.title
+      const slug = flyerData.title
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "-")
         .replace(/-+/g, "-")
@@ -248,14 +131,13 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
       const date = new Date().toISOString().split("T")[0];
 
       const link = document.createElement("a");
-      link.download = `flyer-${productSlug}-${date}.png`;
+      link.download = `flyer-${slug}-${date}.png`;
       link.href = dataUrl;
       link.click();
-
       document.body.removeChild(iframe);
     } catch (e) {
       console.error("Download error:", e);
-      // Fallback: descargar el HTML
+      // Fallback: descarga HTML
       const blob = new Blob([flyerHtml!], { type: "text/html" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -268,44 +150,45 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
     }
   }
 
-  // Calcular escala del preview
+  // Escala para el preview visual
   const PREVIEW_WIDTH = 320;
   const previewScale = PREVIEW_WIDTH / 1080;
   const previewHeight = Math.round(1920 * previewScale);
 
+  const templateLabel = template === "tres-fotos"
+    ? `3 fotos (principal + 2 detalles)`
+    : `1 foto (foto principal)`;
+
   return (
     <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-3 mb-5">
         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white text-lg">
           📸
         </div>
         <div>
-          <h3 className="font-bold text-gray-900 text-base">Flyer para Instagram / WhatsApp</h3>
-          <p className="text-xs text-gray-400">Generá un Story listo para compartir</p>
+          <h3 className="font-bold text-gray-900 text-base">
+            Flyer para Instagram / WhatsApp
+          </h3>
+          <p className="text-xs text-gray-400">
+            Template auto-seleccionado: <span className="text-purple-600 font-medium">{templateLabel}</span>
+          </p>
         </div>
       </div>
 
-      {/* Template selector */}
-      <div className="mb-5">
-        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Template</p>
-        <div className="flex gap-3">
-          <TemplateThumbnail type="una-foto" selected={template === "una-foto"} onClick={() => setTemplate("una-foto")} />
-          <TemplateThumbnail type="tres-fotos" selected={template === "tres-fotos"} onClick={() => setTemplate("tres-fotos")} />
-        </div>
-      </div>
-
-      {/* Detail photos (solo para 3 fotos) */}
-      {template === "tres-fotos" && (
-        <div className="mb-5">
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Fotos de detalle</p>
-          <p className="text-xs text-gray-400 mb-3">Si no subís fotos se repetirá la foto principal</p>
-          <div className="flex gap-3">
-            <DetailUpload label="Detalle izquierda" onSelect={setDetail1} preview={detail1} />
-            <DetailUpload label="Detalle derecha" onSelect={setDetail2} preview={detail2} />
+      {/* Datos pre-cargados */}
+      <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
+        {[
+          { label: "Precio", value: flyerData.price },
+          { label: "Título flyer", value: flyerData.title },
+          { label: "Estado", value: conditionLabels[condition] },
+        ].map((item) => (
+          <div key={item.label} className="bg-white border border-purple-100 rounded-xl px-3 py-2">
+            <div className="text-gray-400 mb-0.5">{item.label}</div>
+            <div className="font-semibold text-gray-700 truncate">{item.value}</div>
           </div>
-        </div>
-      )}
+        ))}
+      </div>
 
       {/* Contact field */}
       <div className="mb-5">
@@ -319,20 +202,6 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
           placeholder="Ej: Llamáme: 11-1234-5678"
           className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-purple-300 focus:border-transparent"
         />
-      </div>
-
-      {/* Datos pre-cargados (readonly) */}
-      <div className="grid grid-cols-3 gap-2 mb-5 text-xs">
-        {[
-          { label: "Precio", value: flyerData.price },
-          { label: "Título", value: flyerData.title },
-          { label: "Estado", value: conditionLabels[condition] },
-        ].map((item) => (
-          <div key={item.label} className="bg-white border border-purple-100 rounded-xl px-3 py-2">
-            <div className="text-gray-400 mb-0.5">{item.label}</div>
-            <div className="font-semibold text-gray-700 truncate">{item.value}</div>
-          </div>
-        ))}
       </div>
 
       {error && (
@@ -365,14 +234,12 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
       {/* Preview + download */}
       {flyerHtml && (
         <div>
-          {/* Preview iframe */}
           <div className="mb-4 flex justify-center">
             <div
               className="relative rounded-2xl overflow-hidden shadow-2xl border border-purple-200"
               style={{ width: PREVIEW_WIDTH, height: previewHeight }}
             >
               <iframe
-                ref={iframeRef}
                 srcDoc={flyerHtml}
                 style={{
                   width: 1080,
@@ -386,11 +253,9 @@ export default function FlyerGenerator({ flyerData, imageBase64, condition }: Pr
               />
             </div>
           </div>
-
-          {/* Action buttons */}
           <div className="flex gap-3">
             <button
-              onClick={() => { setFlyerHtml(null); }}
+              onClick={() => setFlyerHtml(null)}
               className="flex-1 py-3 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
             >
               ← Editar
