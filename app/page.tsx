@@ -50,6 +50,7 @@ export default function Home() {
   const [condition, setCondition] = useState<ProductCondition>("nuevo");
   const [dollarType, setDollarType] = useState<DollarType>("blue");
   const [contact, setContact] = useState("");
+  const [extraInfo, setExtraInfo] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResponse | null>(null);
@@ -87,7 +88,7 @@ export default function Home() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: main.base64, imageMimeType: main.mimeType,
-          platforms: apiPlatforms, condition, dollarType }),
+          platforms: apiPlatforms, condition, dollarType, extraInfo: extraInfo.trim() }),
       });
       const data: GenerateResponse = await res.json();
       if (!res.ok) throw new Error((data as { error?: string }).error ?? "Error al generar");
@@ -143,6 +144,7 @@ export default function Home() {
   function reset() {
     setStep("upload"); setImages([]); setResult(null); setError(null);
     setFlyerHtml(null); setPlatforms(["mercadolibre"]); setCondition("nuevo");
+    setExtraInfo("");
   }
 
   const wantFlyer = platforms.includes("flyer");
@@ -204,6 +206,24 @@ export default function Home() {
             selected={platforms} condition={condition} dollarType={dollarType}
             onToggle={togglePlatform} onCondition={setCondition} onDollarType={setDollarType}
           />
+
+          {/* Extra info for the AI */}
+          <div style={{ marginTop: 28 }}>
+            <p className="section-label" style={{ marginBottom: 6 }}>
+              Información adicional para la IA
+            </p>
+            <p style={{ fontSize: 12.5, color: "var(--text-faint)", marginBottom: 10 }}>
+              Opcional — talle, color exacto, detalles de uso, accesorios incluidos, etc.
+            </p>
+            <textarea
+              className="field-input"
+              value={extraInfo}
+              onChange={(e) => setExtraInfo(e.target.value)}
+              placeholder="Ej: Talle M, color verde oscuro, usado 3 veces, incluye funda original"
+              rows={3}
+              style={{ resize: "vertical", lineHeight: 1.6 }}
+            />
+          </div>
 
           {/* Contact field — only when Flyer is selected */}
           {wantFlyer && (

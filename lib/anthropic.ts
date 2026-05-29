@@ -8,7 +8,8 @@ export const anthropic = new Anthropic({
 export function buildPrompt(
   platforms: Platform[],
   condition: ProductCondition,
-  dollarRate: number
+  dollarRate: number,
+  extraInfo?: string,
 ): string {
   const platformInstructions = platforms
     .map((p) => {
@@ -32,9 +33,13 @@ export function buildPrompt(
       ? "El producto es REACONDICIONADO: aplica un descuento del 10-20% sobre el precio de referencia."
       : "El producto es NUEVO: usa el precio de referencia del mercado.";
 
+  const extraSection = extraInfo
+    ? `\nINFORMACIÓN ADICIONAL DEL VENDEDOR (tenela muy en cuenta al generar el contenido):\n${extraInfo}\n`
+    : "";
+
   return `Eres un experto en ventas online en Argentina. Analiza la imagen del producto y genera publicaciones optimizadas para las plataformas seleccionadas.
 
-${conditionDiscount}
+${conditionDiscount}${extraSection}
 
 Platforms requeridas: ${platforms.join(", ")}
 

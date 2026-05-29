@@ -10,6 +10,7 @@ interface RequestBody {
   platforms: Platform[];
   condition: ProductCondition;
   dollarType: "oficial" | "blue";
+  extraInfo?: string;
 }
 
 async function fetchDollarRate(type: "oficial" | "blue"): Promise<number> {
@@ -28,14 +29,14 @@ async function fetchDollarRate(type: "oficial" | "blue"): Promise<number> {
 
 export async function POST(req: NextRequest) {
   const body: RequestBody = await req.json();
-  const { imageBase64, imageMimeType, platforms, condition, dollarType } = body;
+  const { imageBase64, imageMimeType, platforms, condition, dollarType, extraInfo } = body;
 
-  if (!imageBase64 || !platforms?.length) {
+  if (!imageBase64) {
     return NextResponse.json({ error: "Faltan parámetros requeridos" }, { status: 400 });
   }
 
   const dollarRate = await fetchDollarRate(dollarType);
-  const prompt = buildPrompt(platforms, condition, dollarRate);
+  const prompt = buildPrompt(platforms, condition, dollarRate, extraInfo);
 
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-5",
