@@ -2,17 +2,24 @@
 
 import { Platform, ProductCondition, DollarType } from "@/lib/types";
 
-const PLATFORMS: { id: Platform; label: string; icon: string; color: string }[] = [
-  { id: "mercadolibre", label: "Mercado Libre", icon: "🛒", color: "yellow" },
-  { id: "amazon", label: "Amazon", icon: "📦", color: "orange" },
-  { id: "facebook", label: "Facebook Marketplace", icon: "👥", color: "blue" },
-  { id: "olx", label: "OLX Argentina", icon: "🏷️", color: "green" },
+const PLATFORMS: {
+  id: Platform; label: string; abbr: string;
+  badgeBg: string; badgeColor: string;
+}[] = [
+  { id: "mercadolibre", label: "Mercado Libre", abbr: "ML",
+    badgeBg: "oklch(0.78 0.15 85 / 0.15)", badgeColor: "oklch(0.82 0.14 85)" },
+  { id: "amazon", label: "Amazon", abbr: "AMZ",
+    badgeBg: "oklch(0.75 0.14 55 / 0.15)", badgeColor: "oklch(0.80 0.13 55)" },
+  { id: "facebook", label: "Facebook", abbr: "FB",
+    badgeBg: "oklch(0.62 0.14 264 / 0.18)", badgeColor: "oklch(0.72 0.12 264)" },
+  { id: "olx", label: "OLX Argentina", abbr: "OLX",
+    badgeBg: "oklch(0.72 0.15 245 / 0.14)", badgeColor: "var(--accent-bright)" },
 ];
 
-const CONDITIONS: { id: ProductCondition; label: string; desc: string }[] = [
-  { id: "nuevo", label: "Nuevo", desc: "Precio completo de mercado" },
-  { id: "reacondicionado", label: "Reacondicionado", desc: "Descuento 10-20%" },
-  { id: "usado", label: "Usado", desc: "Descuento 20-40%" },
+const CONDITIONS: { id: ProductCondition; label: string; sub: string }[] = [
+  { id: "nuevo",          label: "Nuevo",         sub: "Precio referencia" },
+  { id: "reacondicionado",label: "Reacondicionado",sub: "−10–20%" },
+  { id: "usado",          label: "Usado",          sub: "−20–40%" },
 ];
 
 interface Props {
@@ -27,80 +34,87 @@ interface Props {
 export default function PlatformSelector({
   selected, condition, dollarType, onToggle, onCondition, onDollarType,
 }: Props) {
-  const colorMap: Record<string, string> = {
-    yellow: "border-yellow-400 bg-yellow-50 text-yellow-800",
-    orange: "border-orange-400 bg-orange-50 text-orange-800",
-    blue: "border-blue-400 bg-blue-50 text-blue-800",
-    green: "border-green-400 bg-green-50 text-green-800",
-  };
-
   return (
-    <div className="space-y-6">
+    <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+
+      {/* Platforms */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
-          Plataformas
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
+        <p className="section-label" style={{ marginBottom: 12 }}>Plataformas</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {PLATFORMS.map((p) => {
-            const isSelected = selected.includes(p.id);
+            const sel = selected.includes(p.id);
             return (
               <button
                 key={p.id}
                 onClick={() => onToggle(p.id)}
-                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${
-                  isSelected
-                    ? colorMap[p.color]
-                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                }`}
+                className={`platform-card ${sel ? "selected" : ""}`}
               >
-                <span className="text-2xl">{p.icon}</span>
-                <span className="font-medium text-sm">{p.label}</span>
-                {isSelected && <span className="ml-auto text-xs">✓</span>}
+                <div className="platform-badge mono"
+                  style={{ background: p.badgeBg, color: p.badgeColor,
+                    fontSize: p.abbr.length > 2 ? 9 : 10 }}>
+                  {p.abbr}
+                </div>
+                <span style={{ fontSize: 13.5, fontWeight: 500,
+                  color: sel ? "var(--text)" : "var(--text-mute)" }}>
+                  {p.label}
+                </span>
+                {sel && (
+                  <div style={{ marginLeft: "auto", width: 18, height: 18,
+                    borderRadius: "50%", background: "var(--accent-dim)",
+                    border: "1px solid var(--accent)", display: "flex",
+                    alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none"
+                      stroke="var(--accent-bright)" strokeWidth="2.8" strokeLinecap="round"
+                      strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  </div>
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
+      {/* Condition */}
       <div>
-        <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
-          Estado del producto
-        </h3>
-        <div className="grid grid-cols-3 gap-2">
+        <p className="section-label" style={{ marginBottom: 12 }}>Estado del producto</p>
+        <div style={{ display: "flex", gap: 10 }}>
           {CONDITIONS.map((c) => (
             <button
               key={c.id}
               onClick={() => onCondition(c.id)}
-              className={`p-3 rounded-xl border-2 text-center transition-all ${
-                condition === c.id
-                  ? "border-blue-500 bg-blue-50 text-blue-800"
-                  : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-              }`}
+              className={`condition-card ${condition === c.id ? "selected" : ""}`}
             >
-              <div className="font-medium text-sm">{c.label}</div>
-              <div className="text-xs text-gray-400 mt-0.5">{c.desc}</div>
+              <div style={{ fontSize: 13.5, fontWeight: 600,
+                color: condition === c.id ? "var(--accent-bright)" : "var(--text-mute)",
+                marginBottom: 2 }}>
+                {c.label}
+              </div>
+              <div className="mono" style={{ fontSize: 10, color: "var(--text-faint)" }}>
+                {c.sub}
+              </div>
             </button>
           ))}
         </div>
       </div>
 
+      {/* Dollar type (Amazon only) */}
       {selected.includes("amazon") && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-600 uppercase tracking-wide mb-3">
-            Cotización USD (para Amazon)
-          </h3>
-          <div className="flex gap-3">
+          <p className="section-label" style={{ marginBottom: 12 }}>
+            Cotización USD para Amazon
+          </p>
+          <div style={{ display: "flex", gap: 10 }}>
             {(["oficial", "blue"] as DollarType[]).map((d) => (
               <button
                 key={d}
                 onClick={() => onDollarType(d)}
-                className={`flex-1 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
-                  dollarType === d
-                    ? "border-green-500 bg-green-50 text-green-800"
-                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-300"
-                }`}
+                className={`condition-card ${dollarType === d ? "selected" : ""}`}
+                style={{ flex: 1 }}
               >
-                Dólar {d === "oficial" ? "Oficial" : "Blue"}
+                <div style={{ fontSize: 13.5, fontWeight: 600,
+                  color: dollarType === d ? "var(--accent-bright)" : "var(--text-mute)" }}>
+                  Dólar {d === "oficial" ? "Oficial" : "Blue"}
+                </div>
               </button>
             ))}
           </div>

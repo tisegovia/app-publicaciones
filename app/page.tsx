@@ -4,9 +4,39 @@ import { useState } from "react";
 import ImageUploader, { ImageFile } from "@/components/ImageUploader";
 import PlatformSelector from "@/components/PlatformSelector";
 import PublicationResult from "@/components/PublicationResult";
+import { IconCheck, IconSparkle, IconChevronLeft } from "@/components/Icons";
 import { GenerateResponse, HistoryEntry, Platform, ProductCondition, DollarType } from "@/lib/types";
 
 type Step = "upload" | "configure" | "result";
+const STEPS: Step[] = ["upload", "configure", "result"];
+const STEP_LABELS = ["Subir fotos", "Configurar", "Resultados"];
+
+function Stepper({ current }: { current: Step }) {
+  const ci = STEPS.indexOf(current);
+  return (
+    <div className="stepper mb-10">
+      {STEPS.map((s, i) => {
+        const state = ci > i ? "done" : ci === i ? "active" : "pending";
+        return (
+          <div key={s} className="flex items-center" style={{ flex: i < 2 ? 1 : undefined }}>
+            <div className="flex items-center gap-2">
+              <div className={`stepper-dot ${state}`}>
+                {state === "done"
+                  ? <IconCheck size={13} />
+                  : <span className="mono">{i + 1}</span>
+                }
+              </div>
+              <span className={`stepper-label ${state}`}>{STEP_LABELS[i]}</span>
+            </div>
+            {i < 2 && (
+              <div className={`stepper-connector ${ci > i ? "filled" : ""}`} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 export default function Home() {
   const [step, setStep] = useState<Step>("upload");
@@ -18,71 +48,40 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<GenerateResponse | null>(null);
 
-  function togglePlatform(p: Platform) {
-    setPlatforms((prev) =>
-      prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]
-    );
+  function handleImagesChange(next: ImageFile[]) {
+    setImages(next);
+    if (next.length > 0 && step === "upload") setStep("configure");
+    if (next.length === 0) setStep("upload");
   }
 
-  function handleImagesChange(newImages: ImageFile[]) {
-    setImages(newImages);
-    // Avanzar al paso 2 automáticamente cuando se sube la primera foto
-    if (newImages.length > 0 && step === "upload") {
-      setStep("configure");
-    }
-    // Volver al paso 1 si se eliminan todas las fotos
-    if (newImages.length === 0) {
-      setStep("upload");
-    }
+  function togglePlatform(p: Platform) {
+    setPlatforms((prev) => prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]);
   }
 
   async function handleGenerate() {
-    if (!platforms.length) {
-      setError("Seleccioná al menos una plataforma");
-      return;
-    }
-    if (!images.length) {
-      setError("Subí al menos una foto del producto");
-      return;
-    }
-    setLoading(true);
-    setError(null);
-
+    if (!platforms.length) { setError("Seleccioná al menos una plataforma"); return; }
+    if (!images.length)    { setError("Subí al menos una foto del producto"); return; }
+    setLoading(true); setError(null);
     try {
-      const mainImage = images[0];
+      const main = images[0];
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          imageBase64: mainImage.base64,
-          imageMimeType: mainImage.mimeType,
-          platforms,
-          condition,
-          dollarType,
-        }),
+        body: JSON.stringify({ imageBase64: main.base64, imageMimeType: main.mimeType,
+          platforms, condition, dollarType }),
       });
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al generar");
-
       setResult(data);
 
-      // Guardar en historial
-      const previews = images.map((img) => img.preview);
+      const previews = images.map((i) => i.preview);
       const entry: HistoryEntry = {
-        id: Date.now().toString(),
-        fecha: new Date().toISOString(),
-        imageBase64: previews[0],
-        imageBase64s: previews,
-        plataformas: platforms,
-        condicion: condition,
-        resultado: data,
+        id: Date.now().toString(), fecha: new Date().toISOString(),
+        imageBase64: previews[0], imageBase64s: previews,
+        plataformas: platforms, condicion: condition, resultado: data,
       };
-      const history: HistoryEntry[] = JSON.parse(
-        localStorage.getItem("publigen_history") ?? "[]"
-      );
+      const history: HistoryEntry[] = JSON.parse(localStorage.getItem("publigen_history") ?? "[]");
       localStorage.setItem("publigen_history", JSON.stringify([entry, ...history]));
-
       setStep("result");
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : "Error desconocido");
@@ -92,97 +91,72 @@ export default function Home() {
   }
 
   function reset() {
-    setStep("upload");
-    setImages([]);
-    setResult(null);
-    setError(null);
-    setPlatforms(["mercadolibre"]);
-    setCondition("nuevo");
+    setStep("upload"); setImages([]); setResult(null); setError(null);
+    setPlatforms(["mercadolibre"]); setCondition("nuevo");
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Step indicator */}
-      <div className="flex items-center gap-2 mb-8">
-        {(["upload", "configure", "result"] as Step[]).map((s, i) => {
-          const labels = ["Subir fotos", "Configurar", "Resultados"];
-          const done = ["upload", "configure", "result"].indexOf(step) > i;
-          const active = step === s;
-          return (
-            <div key={s} className="flex items-center gap-2">
-              <div className={`flex items-center gap-1.5 text-sm font-medium ${
-                active ? "text-blue-600" : done ? "text-green-600" : "text-gray-400"
-              }`}>
-                <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                  active ? "bg-blue-600 text-white" : done ? "bg-green-500 text-white" : "bg-gray-200 text-gray-500"
-                }`}>
-                  {done ? "✓" : i + 1}
-                </span>
-                {labels[i]}
-              </div>
-              {i < 2 && <div className={`w-8 h-0.5 ${done ? "bg-green-300" : "bg-gray-200"}`} />}
-            </div>
-          );
-        })}
-      </div>
+    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <Stepper current={step} />
 
-      {/* Step: Upload */}
+      {/* ── STEP 1: Upload ─────────────────────────────────────────── */}
       {step === "upload" && (
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Subí las fotos del producto</h1>
-          <p className="text-gray-500 mb-6">
+          <p className="eyebrow" style={{ marginBottom: 16 }}>Paso 1 de 3</p>
+          <h1 className="page-title" style={{ marginBottom: 8 }}>
+            Subí las <span className="gradient-text">fotos</span> del producto
+          </h1>
+          <p style={{ fontSize: 14.5, color: "var(--text-mute)", marginBottom: 32 }}>
             La IA analiza la primera foto. Con 3 fotos el flyer incluye imágenes de detalle.
           </p>
           <ImageUploader images={images} onImagesChange={handleImagesChange} />
         </div>
       )}
 
-      {/* Step: Configure */}
+      {/* ── STEP 2: Configure ──────────────────────────────────────── */}
       {step === "configure" && (
         <div>
-          <div className="flex items-start gap-4 mb-6">
-            {/* Thumbnails de las fotos */}
-            <div className="flex gap-2 flex-shrink-0">
-              {images.map((img, i) => (
-                <img
-                  key={i}
-                  src={img.preview}
-                  alt={`Foto ${i + 1}`}
-                  className={`object-cover rounded-xl border border-gray-200 ${
-                    i === 0 ? "w-20 h-20" : "w-12 h-12 opacity-75"
-                  }`}
-                />
-              ))}
-            </div>
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900">Configurar publicación</h1>
-              <button
-                onClick={() => setStep("upload")}
-                className="text-sm text-blue-500 hover:text-blue-700 mt-0.5"
-              >
-                ← Cambiar fotos
-              </button>
-            </div>
+          <p className="eyebrow" style={{ marginBottom: 16 }}>Paso 2 de 3</p>
+          <h1 className="page-title" style={{ marginBottom: 24 }}>
+            Configurar <span className="gradient-text">publicación</span>
+          </h1>
+
+          {/* Image thumbnails row */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+            {images.map((img, i) => (
+              <img key={i} src={img.preview} alt={`Foto ${i+1}`}
+                style={{ width: i === 0 ? 64 : 44, height: i === 0 ? 64 : 44,
+                  objectFit: "cover", borderRadius: "var(--r-sm)",
+                  border: "1px solid var(--border-soft)", opacity: i === 0 ? 1 : 0.7,
+                  flexShrink: 0 }} />
+            ))}
+            <button onClick={() => setStep("upload")}
+              style={{ display: "flex", alignItems: "center", gap: 5, background: "none",
+                border: "none", cursor: "pointer", color: "var(--text-faint)",
+                fontSize: 13, padding: "6px 10px", borderRadius: "var(--r-sm)",
+                transition: "color 0.14s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = "var(--accent-bright)")}
+              onMouseLeave={e => (e.currentTarget.style.color = "var(--text-faint)")}>
+              <IconChevronLeft size={14} /> Cambiar fotos
+            </button>
           </div>
 
-          {/* Upload adicional inline */}
+          {/* Add more photos inline */}
           {images.length < 3 && (
-            <div className="mb-5">
+            <div style={{ marginBottom: 28 }}>
               <ImageUploader images={images} onImagesChange={handleImagesChange} />
             </div>
           )}
 
           <PlatformSelector
-            selected={platforms}
-            condition={condition}
-            dollarType={dollarType}
-            onToggle={togglePlatform}
-            onCondition={setCondition}
-            onDollarType={setDollarType}
+            selected={platforms} condition={condition} dollarType={dollarType}
+            onToggle={togglePlatform} onCondition={setCondition} onDollarType={setDollarType}
           />
 
           {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 text-red-700 text-sm rounded-xl p-3">
+            <div style={{ marginTop: 20, padding: "12px 16px", borderRadius: "var(--r-sm)",
+              background: "var(--err-dim)", border: "1px solid oklch(0.72 0.18 20 / 0.25)",
+              fontSize: 13.5, color: "var(--err)" }}>
               {error}
             </div>
           )}
@@ -190,40 +164,33 @@ export default function Home() {
           <button
             onClick={handleGenerate}
             disabled={loading || !platforms.length}
-            className="mt-6 w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold rounded-2xl transition-colors flex items-center justify-center gap-2"
+            className="btn-primary full"
+            style={{ marginTop: 28 }}
           >
             {loading ? (
-              <>
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                </svg>
-                Generando publicaciones…
-              </>
+              <><div className="spinner" />Generando publicaciones…</>
             ) : (
-              <>🚀 Generar publicaciones con IA</>
+              <><IconSparkle size={16} />Generar con IA</>
             )}
           </button>
         </div>
       )}
 
-      {/* Step: Result */}
+      {/* ── STEP 3: Result ─────────────────────────────────────────── */}
       {step === "result" && result && (
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">Publicaciones generadas</h1>
-            <button
-              onClick={reset}
-              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors"
-            >
-              + Nueva
+          <p className="eyebrow" style={{ marginBottom: 16 }}>Paso 3 de 3</p>
+          <div className="flex items-center justify-between" style={{ marginBottom: 28 }}>
+            <h1 className="page-title">
+              <span className="gradient-text">Publicaciones</span> generadas
+            </h1>
+            <button onClick={reset} className="btn-ghost">
+              Nueva
             </button>
           </div>
           <PublicationResult
-            result={result}
-            platforms={platforms}
-            images={images.map((img) => img.preview)}
-            condition={condition}
+            result={result} platforms={platforms}
+            images={images.map((i) => i.preview)} condition={condition}
           />
         </div>
       )}

@@ -1,9 +1,21 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
-import Link from "next/link";
+import NavBar from "@/components/NavBar";
 
-const inter = Inter({ subsets: ["latin"] });
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-grotesk",
+  display: "swap",
+});
+
+const spaceMono = Space_Mono({
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-mono-brand",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "PubliGen — Generador de publicaciones",
@@ -12,37 +24,12 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es">
-      <body className={`${inter.className} bg-gray-50 min-h-screen`}>
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-          <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <Link href="/" className="flex items-center gap-2 font-bold text-gray-900 text-lg">
-              <span className="text-2xl">🚀</span>
-              PubliGen
-            </Link>
-            <nav className="flex items-center gap-1">
-              <Link
-                href="/"
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Nueva publicación
-              </Link>
-              <Link
-                href="/history"
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                Historial
-              </Link>
-              <Link
-                href="/settings"
-                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                ⚙️
-              </Link>
-            </nav>
-          </div>
-        </header>
-        <main className="max-w-5xl mx-auto px-4 py-8">{children}</main>
+    <html lang="es" className={`${spaceGrotesk.variable} ${spaceMono.variable}`}>
+      <body>
+        <NavBar />
+        <main style={{ maxWidth: 880, margin: "0 auto", padding: "40px 20px 80px" }}>
+          {children}
+        </main>
       </body>
     </html>
   );

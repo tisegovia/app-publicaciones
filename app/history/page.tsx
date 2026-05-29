@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { HistoryEntry } from "@/lib/types";
 import HistoryList from "@/components/HistoryList";
 import PublicationResult from "@/components/PublicationResult";
+import { IconChevronLeft, IconPlus } from "@/components/Icons";
 
 export default function HistoryPage() {
   const [entries, setEntries] = useState<HistoryEntry[]>([]);
@@ -12,8 +13,7 @@ export default function HistoryPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("publigen_history") ?? "[]");
-    setEntries(data);
+    setEntries(JSON.parse(localStorage.getItem("publigen_history") ?? "[]"));
   }, []);
 
   function handleDelete(id: string) {
@@ -24,27 +24,36 @@ export default function HistoryPage() {
   }
 
   if (selected) {
+    const thumb = selected.imageBase64.startsWith("data:")
+      ? selected.imageBase64
+      : `data:image/jpeg;base64,${selected.imageBase64}`;
     return (
-      <div className="max-w-2xl mx-auto">
-        <button
-          onClick={() => setSelected(null)}
-          className="flex items-center gap-2 text-sm text-blue-500 hover:text-blue-700 mb-6"
-        >
-          ← Volver al historial
+      <div style={{ maxWidth: 640, margin: "0 auto" }}>
+        <button onClick={() => setSelected(null)}
+          style={{ display: "flex", alignItems: "center", gap: 6, background: "none",
+            border: "none", cursor: "pointer", color: "var(--text-faint)",
+            fontSize: 13.5, padding: "6px 0", marginBottom: 24, transition: "color 0.14s" }}
+          onMouseEnter={e => (e.currentTarget.style.color = "var(--accent-bright)")}
+          onMouseLeave={e => (e.currentTarget.style.color = "var(--text-faint)")}>
+          <IconChevronLeft size={15} /> Volver al historial
         </button>
-        <div className="flex items-center gap-4 mb-6">
-          <img
-            src={selected.imageBase64.startsWith("data:") ? selected.imageBase64 : `data:image/jpeg;base64,${selected.imageBase64}`}
-            alt={selected.resultado.producto.nombre}
-            className="w-16 h-16 object-cover rounded-xl border border-gray-200"
-          />
+
+        <div className="flex items-center gap-4" style={{ marginBottom: 28 }}>
+          <img src={thumb} alt={selected.resultado.producto.nombre}
+            style={{ width: 64, height: 64, objectFit: "cover", borderRadius: "var(--r-sm)",
+              border: "1px solid var(--border-soft)", flexShrink: 0 }} />
           <div>
-            <h1 className="text-xl font-bold text-gray-900">{selected.resultado.producto.nombre}</h1>
-            <p className="text-sm text-gray-400">
-              {new Date(selected.fecha).toLocaleDateString("es-AR", { day: "numeric", month: "long", year: "numeric" })}
+            <h1 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.025em",
+              color: "var(--text)", marginBottom: 4 }}>
+              {selected.resultado.producto.nombre}
+            </h1>
+            <p className="mono" style={{ fontSize: 11, color: "var(--text-faint)" }}>
+              {new Date(selected.fecha).toLocaleDateString("es-AR",
+                { day: "numeric", month: "long", year: "numeric" })}
             </p>
           </div>
         </div>
+
         <PublicationResult
           result={selected.resultado}
           platforms={selected.plataformas}
@@ -56,18 +65,18 @@ export default function HistoryPage() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ maxWidth: 640, margin: "0 auto" }}>
+      <div className="flex items-center justify-between" style={{ marginBottom: 32 }}>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Historial</h1>
-          <p className="text-gray-400 text-sm mt-0.5">{entries.length} publicaciones guardadas</p>
+          <p className="eyebrow" style={{ marginBottom: 12 }}>Archivo</p>
+          <h1 className="page-title">Historial</h1>
+          <p className="mono" style={{ fontSize: 11.5, color: "var(--text-faint)", marginTop: 6 }}>
+            {entries.length} publicación{entries.length !== 1 ? "es" : ""} guardada{entries.length !== 1 ? "s" : ""}
+          </p>
         </div>
         {entries.length > 0 && (
-          <button
-            onClick={() => router.push("/")}
-            className="px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors"
-          >
-            + Nueva
+          <button onClick={() => router.push("/")} className="btn-ghost">
+            <IconPlus size={14} /> Nueva
           </button>
         )}
       </div>

@@ -8,57 +8,48 @@ import FlyerGenerator from "./FlyerGenerator";
 interface Props {
   result: GenerateResponse;
   platforms: Platform[];
-  images: string[];        // data URLs: [0]=main, [1]=detail1, [2]=detail2
+  images: string[];
   condition: ProductCondition;
 }
 
-function Field({
-  label,
-  value,
-  maxLen,
-  multiline = false,
-}: {
-  label: string;
-  value: string;
-  maxLen?: number;
-  multiline?: boolean;
-}) {
+/* ── Field components ───────────────────────────────────────── */
+function Field({ label, value, maxLen, multiline = false }:
+  { label: string; value: string; maxLen?: number; multiline?: boolean }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
-      <div className="flex items-start justify-between gap-2 mb-2">
+    <div className="field-card">
+      <div className="flex items-center justify-between gap-2 mb-3">
         <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
+          <span className="field-label">{label}</span>
           {maxLen && (
-            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-              value.length > maxLen ? "bg-red-100 text-red-600" : "bg-gray-100 text-gray-500"
-            }`}>
+            <span className={`char-counter ${value.length > maxLen ? "over" : ""}`}>
               {value.length}/{maxLen}
             </span>
           )}
         </div>
         <CopyButton text={value} />
       </div>
-      {multiline ? (
-        <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">{value}</p>
-      ) : (
-        <p className="text-sm text-gray-800 font-medium">{value}</p>
-      )}
+      {multiline
+        ? <p style={{ fontSize: 13.5, color: "var(--text-mute)", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>{value}</p>
+        : <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", letterSpacing: "-0.01em" }}>{value}</p>
+      }
     </div>
   );
 }
 
 function ArrayField({ label, items }: { label: string; items: string[] }) {
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
+    <div className="field-card">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <span className="field-label">{label}</span>
         <CopyButton text={items.join("\n")} />
       </div>
-      <ul className="space-y-1.5">
+      <ul style={{ display: "flex", flexDirection: "column", gap: 8 }}>
         {items.map((item, i) => (
-          <li key={i} className="flex items-start gap-2 text-sm text-gray-700">
-            <span className="text-blue-400 font-bold mt-0.5">•</span>
-            <span>{item}</span>
+          <li key={i} className="flex items-start gap-2"
+            style={{ fontSize: 13.5, color: "var(--text-mute)", lineHeight: 1.5 }}>
+            <span style={{ color: "var(--accent)", fontFamily: "var(--font-mono)",
+              fontSize: 10, marginTop: 4, flexShrink: 0 }}>—</span>
+            {item}
           </li>
         ))}
       </ul>
@@ -69,16 +60,17 @@ function ArrayField({ label, items }: { label: string; items: string[] }) {
 function KeyValueField({ label, data }: { label: string; data: Record<string, string> }) {
   const text = Object.entries(data).map(([k, v]) => `${k}: ${v}`).join("\n");
   return (
-    <div className="bg-white border border-gray-200 rounded-xl p-4">
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{label}</span>
+    <div className="field-card">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <span className="field-label">{label}</span>
         <CopyButton text={text} />
       </div>
-      <dl className="space-y-1">
+      <dl style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {Object.entries(data).map(([k, v]) => (
-          <div key={k} className="flex gap-2 text-sm">
-            <dt className="text-gray-500 min-w-[80px]">{k}:</dt>
-            <dd className="text-gray-800 font-medium">{v}</dd>
+          <div key={k} className="flex gap-3" style={{ fontSize: 13.5 }}>
+            <dt className="mono" style={{ color: "var(--text-faint)", fontSize: 11.5,
+              minWidth: 90, paddingTop: 2 }}>{k}</dt>
+            <dd style={{ color: "var(--text)", fontWeight: 500 }}>{v}</dd>
           </div>
         ))}
       </dl>
@@ -86,120 +78,120 @@ function KeyValueField({ label, data }: { label: string; data: Record<string, st
   );
 }
 
-function PriceTag({ price, currency }: { price: number; currency: string }) {
-  const formatted = currency === "USD"
-    ? `USD ${price.toLocaleString("es-AR", { minimumFractionDigits: 2 })}`
-    : `$ ${price.toLocaleString("es-AR")}`;
-  return (
-    <span className="text-2xl font-bold text-green-700">{formatted}</span>
-  );
-}
+/* ── Platform config ────────────────────────────────────────── */
+const TABS: { id: Platform; label: string; abbr: string }[] = [
+  { id: "mercadolibre", label: "Mercado Libre", abbr: "ML" },
+  { id: "amazon",       label: "Amazon",         abbr: "AMZ" },
+  { id: "facebook",     label: "Facebook",        abbr: "FB" },
+  { id: "olx",          label: "OLX",             abbr: "OLX" },
+];
 
-const PLATFORM_CONFIG: Record<Platform, { label: string; icon: string; color: string }> = {
-  mercadolibre: { label: "Mercado Libre", icon: "🛒", color: "bg-yellow-50 border-yellow-300" },
-  amazon: { label: "Amazon", icon: "📦", color: "bg-orange-50 border-orange-300" },
-  facebook: { label: "Facebook Marketplace", icon: "👥", color: "bg-blue-50 border-blue-300" },
-  olx: { label: "OLX Argentina", icon: "🏷️", color: "bg-green-50 border-green-300" },
-};
-
+/* ── Main component ─────────────────────────────────────────── */
 export default function PublicationResult({ result, platforms, images, condition }: Props) {
   const [activeTab, setActiveTab] = useState<Platform>(platforms[0]);
+  const firstPrice = result.precios[0];
 
   return (
-    <div className="space-y-6">
-      {/* Product Summary */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-2xl p-6">
-        <h2 className="text-xl font-bold text-gray-900 mb-1">{result.producto.nombre}</h2>
-        <p className="text-gray-500 text-sm mb-3">{result.producto.descripcion_corta}</p>
-        <div className="flex flex-wrap gap-2">
-          {result.producto.caracteristicas.map((c, i) => (
-            <span key={i} className="text-xs bg-white border border-blue-200 text-blue-700 px-2.5 py-1 rounded-full">
-              {c}
-            </span>
-          ))}
+    <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+
+      {/* Product summary */}
+      <div className="card" style={{ padding: 24, position: "relative", overflow: "hidden" }}>
+        {/* Top accent line */}
+        <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 2,
+          background: "linear-gradient(90deg, transparent 5%, var(--accent-dim) 25%, var(--accent) 50%, var(--accent-dim) 75%, transparent 95%)" }} />
+        <div className="flex items-start gap-4">
+          {images[0] && (
+            <img src={images[0]} alt="Producto"
+              style={{ width: 72, height: 72, objectFit: "cover", borderRadius: "var(--r-sm)",
+                border: "1px solid var(--border-soft)", flexShrink: 0 }} />
+          )}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ fontSize: 20, fontWeight: 700, letterSpacing: "-0.025em",
+              marginBottom: 4, color: "var(--text)" }}>
+              {result.producto.nombre}
+            </h2>
+            <p style={{ fontSize: 13.5, color: "var(--text-mute)", marginBottom: 12 }}>
+              {result.producto.descripcion_corta}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {result.producto.caracteristicas.map((c, i) => (
+                <span key={i} className="chip chip-mute">{c}</span>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Price Summary */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      {/* Price cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
         {result.precios.map((p, i) => (
-          <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
-            <div className="text-xs text-gray-500 font-medium mb-1">{p.plataforma}</div>
-            <PriceTag price={p.precio_sugerido} currency={p.moneda} />
-            <div className="text-xs text-gray-400 mt-1">
+          <div key={i} className="card" style={{ padding: 18 }}>
+            <p className="section-label" style={{ marginBottom: 8 }}>{p.plataforma}</p>
+            <div className="flex items-baseline gap-2 mb-1">
+              <span className="price-display">
+                {p.moneda === "USD" ? "USD " : "$ "}
+                {p.precio_sugerido.toLocaleString("es-AR")}
+              </span>
+            </div>
+            <p className="mono" style={{ fontSize: 10.5, color: "var(--text-faint)", marginBottom: 6 }}>
               Rango: {p.moneda === "USD" ? "USD " : "$ "}
               {p.precio_min.toLocaleString("es-AR")} – {p.precio_max.toLocaleString("es-AR")}
-            </div>
-            <p className="text-xs text-gray-500 mt-2 italic">{p.justificacion}</p>
+            </p>
+            <p style={{ fontSize: 12, color: "var(--text-faint)", fontStyle: "italic" }}>
+              {p.justificacion}
+            </p>
           </div>
         ))}
       </div>
 
-      {/* Platform Tabs */}
+      {/* Platform tabs */}
       {platforms.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {platforms.map((p) => {
-            const cfg = PLATFORM_CONFIG[p];
-            return (
-              <button
-                key={p}
-                onClick={() => setActiveTab(p)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-xl border text-sm font-medium whitespace-nowrap transition-all ${
-                  activeTab === p ? cfg.color + " shadow-sm" : "bg-white border-gray-200 text-gray-500 hover:bg-gray-50"
-                }`}
-              >
-                <span>{cfg.icon}</span>
-                {cfg.label}
-              </button>
-            );
-          })}
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
+          {TABS.filter((t) => platforms.includes(t.id)).map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActiveTab(t.id)}
+              className={`platform-tab ${activeTab === t.id ? "active" : ""}`}
+            >
+              <span className="mono" style={{ fontSize: 9.5, fontWeight: 700 }}>{t.abbr}</span>
+              {t.label}
+            </button>
+          ))}
         </div>
       )}
 
-      {/* Platform Fields */}
-      <div className="space-y-3">
-        {activeTab === "mercadolibre" && result.mercadolibre && (
-          <>
-            <Field label="Título" value={result.mercadolibre.titulo} maxLen={60} />
-            <Field label="Descripción" value={result.mercadolibre.descripcion} multiline />
-            <Field label="Categoría" value={result.mercadolibre.categoria} />
-            <KeyValueField label="Atributos" data={result.mercadolibre.atributos} />
-            <ArrayField label="Tags / Palabras clave" items={result.mercadolibre.tags} />
-          </>
-        )}
-        {activeTab === "amazon" && result.amazon && (
-          <>
-            <Field label="Product Title" value={result.amazon.title} maxLen={200} />
-            <ArrayField label="Bullet Points" items={result.amazon.bullet_points} />
-            <Field label="Product Description" value={result.amazon.description} multiline />
-            <ArrayField label="Search Terms / Keywords" items={result.amazon.search_terms} />
-            <Field label="Categoría" value={result.amazon.categoria} />
-          </>
-        )}
-        {activeTab === "facebook" && result.facebook && (
-          <>
-            <Field label="Título" value={result.facebook.titulo} maxLen={100} />
-            <Field label="Descripción" value={result.facebook.descripcion} multiline />
-            <Field label="Categoría" value={result.facebook.categoria} />
-            <Field label="Ubicación" value={result.facebook.ubicacion} />
-          </>
-        )}
-        {activeTab === "olx" && result.olx && (
-          <>
-            <Field label="Título" value={result.olx.titulo} />
-            <Field label="Descripción" value={result.olx.descripcion} multiline />
-            <Field label="Categoría" value={result.olx.categoria} />
-          </>
-        )}
+      {/* Fields */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+        {activeTab === "mercadolibre" && result.mercadolibre && (<>
+          <Field label="Título" value={result.mercadolibre.titulo} maxLen={60} />
+          <Field label="Descripción" value={result.mercadolibre.descripcion} multiline />
+          <Field label="Categoría" value={result.mercadolibre.categoria} />
+          <KeyValueField label="Atributos" data={result.mercadolibre.atributos} />
+          <ArrayField label="Tags / Palabras clave" items={result.mercadolibre.tags} />
+        </>)}
+        {activeTab === "amazon" && result.amazon && (<>
+          <Field label="Product Title" value={result.amazon.title} maxLen={200} />
+          <ArrayField label="Bullet Points" items={result.amazon.bullet_points} />
+          <Field label="Product Description" value={result.amazon.description} multiline />
+          <ArrayField label="Search Terms" items={result.amazon.search_terms} />
+          <Field label="Categoría" value={result.amazon.categoria} />
+        </>)}
+        {activeTab === "facebook" && result.facebook && (<>
+          <Field label="Título" value={result.facebook.titulo} maxLen={100} />
+          <Field label="Descripción" value={result.facebook.descripcion} multiline />
+          <Field label="Categoría" value={result.facebook.categoria} />
+          <Field label="Ubicación" value={result.facebook.ubicacion} />
+        </>)}
+        {activeTab === "olx" && result.olx && (<>
+          <Field label="Título" value={result.olx.titulo} />
+          <Field label="Descripción" value={result.olx.descripcion} multiline />
+          <Field label="Categoría" value={result.olx.categoria} />
+        </>)}
       </div>
 
-      {/* Flyer Generator */}
+      {/* Flyer generator */}
       {result.flyerData && (
-        <FlyerGenerator
-          flyerData={result.flyerData}
-          images={images}
-          condition={condition}
-        />
+        <FlyerGenerator flyerData={result.flyerData} images={images} condition={condition} />
       )}
     </div>
   );
