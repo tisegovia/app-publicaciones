@@ -59,16 +59,18 @@ export default function Home() {
   }
 
   async function handleGenerate() {
-    if (!platforms.length) { setError("Seleccioná al menos una plataforma"); return; }
+    if (!platforms.length) { setError("Seleccioná al menos un destino"); return; }
     if (!images.length)    { setError("Subí al menos una foto del producto"); return; }
     setLoading(true); setError(null);
     try {
       const main = images[0];
+      // "flyer" is a UI-only destination; filter it before sending to the API
+      const apiPlatforms = platforms.filter((p) => p !== "flyer");
       const res = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ imageBase64: main.base64, imageMimeType: main.mimeType,
-          platforms, condition, dollarType }),
+          platforms: apiPlatforms, condition, dollarType }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? "Error al generar");

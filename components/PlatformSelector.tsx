@@ -5,6 +5,7 @@ import { Platform, ProductCondition, DollarType } from "@/lib/types";
 const PLATFORMS: {
   id: Platform; label: string; abbr: string;
   badgeBg: string; badgeColor: string;
+  wide?: boolean;
 }[] = [
   { id: "mercadolibre", label: "Mercado Libre", abbr: "ML",
     badgeBg: "oklch(0.78 0.15 85 / 0.15)", badgeColor: "oklch(0.82 0.14 85)" },
@@ -14,6 +15,9 @@ const PLATFORMS: {
     badgeBg: "oklch(0.62 0.14 264 / 0.18)", badgeColor: "oklch(0.72 0.12 264)" },
   { id: "olx", label: "OLX Argentina", abbr: "OLX",
     badgeBg: "oklch(0.72 0.15 245 / 0.14)", badgeColor: "var(--accent-bright)" },
+  { id: "flyer", label: "Flyer Instagram / WhatsApp", abbr: "IG",
+    badgeBg: "oklch(0.60 0.20 345 / 0.18)", badgeColor: "oklch(0.82 0.18 345)",
+    wide: true },
 ];
 
 const CONDITIONS: { id: ProductCondition; label: string; sub: string }[] = [
@@ -39,7 +43,7 @@ export default function PlatformSelector({
 
       {/* Platforms */}
       <div>
-        <p className="section-label" style={{ marginBottom: 12 }}>Plataformas</p>
+        <p className="section-label" style={{ marginBottom: 12 }}>Destinos</p>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           {PLATFORMS.map((p) => {
             const sel = selected.includes(p.id);
@@ -48,6 +52,7 @@ export default function PlatformSelector({
                 key={p.id}
                 onClick={() => onToggle(p.id)}
                 className={`platform-card ${sel ? "selected" : ""}`}
+                style={p.wide ? { gridColumn: "1 / -1" } : undefined}
               >
                 <div className="platform-badge mono"
                   style={{ background: p.badgeBg, color: p.badgeColor,
@@ -58,6 +63,12 @@ export default function PlatformSelector({
                   color: sel ? "var(--text)" : "var(--text-mute)" }}>
                   {p.label}
                 </span>
+                {p.id === "flyer" && !sel && (
+                  <span className="mono" style={{ marginLeft: "auto", fontSize: 9.5,
+                    color: "var(--text-faint)", flexShrink: 0 }}>
+                    Story 9:16
+                  </span>
+                )}
                 {sel && (
                   <div style={{ marginLeft: "auto", width: 18, height: 18,
                     borderRadius: "50%", background: "var(--accent-dim)",

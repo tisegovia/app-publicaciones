@@ -1,4 +1,4 @@
-export type Platform = "mercadolibre" | "amazon" | "facebook" | "olx";
+export type Platform = "mercadolibre" | "amazon" | "facebook" | "olx" | "flyer";
 export type ProductCondition = "nuevo" | "usado" | "reacondicionado";
 export type DollarType = "oficial" | "blue";
 

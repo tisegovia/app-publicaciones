@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { GenerateResponse, Platform, ProductCondition } from "@/lib/types";
+
+type ListingPlatform = Exclude<Platform, "flyer">;
 import CopyButton from "./CopyButton";
 import FlyerGenerator from "./FlyerGenerator";
 
@@ -79,7 +81,7 @@ function KeyValueField({ label, data }: { label: string; data: Record<string, st
 }
 
 /* ── Platform config ────────────────────────────────────────── */
-const TABS: { id: Platform; label: string; abbr: string }[] = [
+const TABS: { id: ListingPlatform; label: string; abbr: string }[] = [
   { id: "mercadolibre", label: "Mercado Libre", abbr: "ML" },
   { id: "amazon",       label: "Amazon",         abbr: "AMZ" },
   { id: "facebook",     label: "Facebook",        abbr: "FB" },
@@ -88,7 +90,8 @@ const TABS: { id: Platform; label: string; abbr: string }[] = [
 
 /* ── Main component ─────────────────────────────────────────── */
 export default function PublicationResult({ result, platforms, images, condition }: Props) {
-  const [activeTab, setActiveTab] = useState<Platform>(platforms[0]);
+  const listingPlatforms = platforms.filter((p): p is ListingPlatform => p !== "flyer");
+  const [activeTab, setActiveTab] = useState<ListingPlatform>(listingPlatforms[0] ?? "mercadolibre");
   const firstPrice = result.precios[0];
 
   return (
@@ -145,9 +148,9 @@ export default function PublicationResult({ result, platforms, images, condition
       </div>
 
       {/* Platform tabs */}
-      {platforms.length > 1 && (
+      {listingPlatforms.length > 1 && (
         <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 2 }}>
-          {TABS.filter((t) => platforms.includes(t.id)).map((t) => (
+          {TABS.filter((t) => listingPlatforms.includes(t.id)).map((t) => (
             <button
               key={t.id}
               onClick={() => setActiveTab(t.id)}
@@ -160,37 +163,39 @@ export default function PublicationResult({ result, platforms, images, condition
         </div>
       )}
 
-      {/* Fields */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {activeTab === "mercadolibre" && result.mercadolibre && (<>
-          <Field label="Título" value={result.mercadolibre.titulo} maxLen={60} />
-          <Field label="Descripción" value={result.mercadolibre.descripcion} multiline />
-          <Field label="Categoría" value={result.mercadolibre.categoria} />
-          <KeyValueField label="Atributos" data={result.mercadolibre.atributos} />
-          <ArrayField label="Tags / Palabras clave" items={result.mercadolibre.tags} />
-        </>)}
-        {activeTab === "amazon" && result.amazon && (<>
-          <Field label="Product Title" value={result.amazon.title} maxLen={200} />
-          <ArrayField label="Bullet Points" items={result.amazon.bullet_points} />
-          <Field label="Product Description" value={result.amazon.description} multiline />
-          <ArrayField label="Search Terms" items={result.amazon.search_terms} />
-          <Field label="Categoría" value={result.amazon.categoria} />
-        </>)}
-        {activeTab === "facebook" && result.facebook && (<>
-          <Field label="Título" value={result.facebook.titulo} maxLen={100} />
-          <Field label="Descripción" value={result.facebook.descripcion} multiline />
-          <Field label="Categoría" value={result.facebook.categoria} />
-          <Field label="Ubicación" value={result.facebook.ubicacion} />
-        </>)}
-        {activeTab === "olx" && result.olx && (<>
-          <Field label="Título" value={result.olx.titulo} />
-          <Field label="Descripción" value={result.olx.descripcion} multiline />
-          <Field label="Categoría" value={result.olx.categoria} />
-        </>)}
-      </div>
+      {/* Fields (only when listing platforms exist) */}
+      {listingPlatforms.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {activeTab === "mercadolibre" && result.mercadolibre && (<>
+            <Field label="Título" value={result.mercadolibre.titulo} maxLen={60} />
+            <Field label="Descripción" value={result.mercadolibre.descripcion} multiline />
+            <Field label="Categoría" value={result.mercadolibre.categoria} />
+            <KeyValueField label="Atributos" data={result.mercadolibre.atributos} />
+            <ArrayField label="Tags / Palabras clave" items={result.mercadolibre.tags} />
+          </>)}
+          {activeTab === "amazon" && result.amazon && (<>
+            <Field label="Product Title" value={result.amazon.title} maxLen={200} />
+            <ArrayField label="Bullet Points" items={result.amazon.bullet_points} />
+            <Field label="Product Description" value={result.amazon.description} multiline />
+            <ArrayField label="Search Terms" items={result.amazon.search_terms} />
+            <Field label="Categoría" value={result.amazon.categoria} />
+          </>)}
+          {activeTab === "facebook" && result.facebook && (<>
+            <Field label="Título" value={result.facebook.titulo} maxLen={100} />
+            <Field label="Descripción" value={result.facebook.descripcion} multiline />
+            <Field label="Categoría" value={result.facebook.categoria} />
+            <Field label="Ubicación" value={result.facebook.ubicacion} />
+          </>)}
+          {activeTab === "olx" && result.olx && (<>
+            <Field label="Título" value={result.olx.titulo} />
+            <Field label="Descripción" value={result.olx.descripcion} multiline />
+            <Field label="Categoría" value={result.olx.categoria} />
+          </>)}
+        </div>
+      )}
 
       {/* Flyer generator */}
-      {result.flyerData && (
+      {platforms.includes("flyer") && result.flyerData && (
         <FlyerGenerator flyerData={result.flyerData} images={images} condition={condition} />
       )}
     </div>
