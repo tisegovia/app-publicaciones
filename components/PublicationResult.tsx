@@ -2,16 +2,17 @@
 
 import { useState } from "react";
 import { GenerateResponse, Platform, ProductCondition } from "@/lib/types";
+import CopyButton from "./CopyButton";
+import { IconDownload, IconCamera } from "./Icons";
 
 type ListingPlatform = Exclude<Platform, "flyer">;
-import CopyButton from "./CopyButton";
-import FlyerGenerator from "./FlyerGenerator";
 
 interface Props {
   result: GenerateResponse;
   platforms: Platform[];
   images: string[];
   condition: ProductCondition;
+  flyerHtml?: string | null;
 }
 
 /* ── Field components ───────────────────────────────────────── */
@@ -80,6 +81,92 @@ function KeyValueField({ label, data }: { label: string; data: Record<string, st
   );
 }
 
+/* ── Flyer result (auto-generated) ─────────────────────────── */
+function FlyerResult({ html, title }: { html: string; title: string }) {
+  const [downloading, setDownloading] = useState(false);
+  const PREVIEW_W = 300;
+  const previewScale = PREVIEW_W / 1080;
+  const previewH = Math.round(1920 * previewScale);
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const { toPng } = await import("html-to-image");
+      const iframe = document.createElement("iframe");
+      iframe.style.cssText = "position:fixed;left:-9999px;top:-9999px;width:1080px;height:1920px;border:none;visibility:hidden;";
+      document.body.appendChild(iframe);
+      await new Promise<void>((resolve) => {
+        iframe.onload = () => resolve();
+        iframe.srcdoc = html;
+        setTimeout(resolve, 3500);
+      });
+      await new Promise((r) => setTimeout(r, 800));
+      const node = iframe.contentDocument?.documentElement;
+      if (!node) throw new Error("No se pudo acceder al contenido");
+      const dataUrl = await toPng(node, { width: 1080, height: 1920, pixelRatio: 1, style: { transform: "none" } });
+      const slug = title.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").slice(0, 30);
+      const link = document.createElement("a");
+      link.download = `flyer-${slug}-${new Date().toISOString().split("T")[0]}.png`;
+      link.href = dataUrl; link.click();
+      document.body.removeChild(iframe);
+    } catch {
+      const blob = new Blob([html], { type: "text/html" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.download = `flyer-${Date.now()}.html`; link.href = url; link.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <div className="flyer-card">
+      {/* Header */}
+      <div className="flex items-center gap-3" style={{ marginBottom: 20 }}>
+        <div style={{ width: 40, height: 40, borderRadius: "var(--r-sm)",
+          background: "oklch(0.60 0.20 345 / 0.18)",
+          border: "1px solid oklch(0.60 0.20 345 / 0.30)",
+          display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+          color: "oklch(0.82 0.18 345)" }}>
+          <IconCamera size={20} />
+        </div>
+        <div>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text)", letterSpacing: "-0.015em" }}>
+            Flyer listo
+          </p>
+          <p className="mono" style={{ fontSize: 10, color: "var(--text-faint)", marginTop: 2 }}>
+            Instagram / WhatsApp · Story 9:16
+          </p>
+        </div>
+      </div>
+
+      {/* Preview */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+        <div style={{ width: PREVIEW_W, height: previewH, borderRadius: "var(--r)",
+          overflow: "hidden", border: "1px solid var(--border-soft)",
+          boxShadow: "0 8px 40px oklch(0.05 0.04 258 / 0.7)" }}>
+          <iframe
+            srcDoc={html}
+            style={{ width: 1080, height: 1920, border: "none",
+              transform: `scale(${previewScale})`, transformOrigin: "top left",
+              pointerEvents: "none" }}
+            title="Flyer preview"
+          />
+        </div>
+      </div>
+
+      {/* Download */}
+      <button onClick={handleDownload} disabled={downloading} className="btn-primary full">
+        {downloading
+          ? <><div className="spinner" />Descargando…</>
+          : <><IconDownload size={15} />Descargar PNG</>
+        }
+      </button>
+    </div>
+  );
+}
+
 /* ── Platform config ────────────────────────────────────────── */
 const TABS: { id: ListingPlatform; label: string; abbr: string }[] = [
   { id: "mercadolibre", label: "Mercado Libre", abbr: "ML" },
@@ -89,10 +176,9 @@ const TABS: { id: ListingPlatform; label: string; abbr: string }[] = [
 ];
 
 /* ── Main component ─────────────────────────────────────────── */
-export default function PublicationResult({ result, platforms, images, condition }: Props) {
+export default function PublicationResult({ result, platforms, images, condition, flyerHtml }: Props) {
   const listingPlatforms = platforms.filter((p): p is ListingPlatform => p !== "flyer");
   const [activeTab, setActiveTab] = useState<ListingPlatform>(listingPlatforms[0] ?? "mercadolibre");
-  const firstPrice = result.precios[0];
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
@@ -126,26 +212,28 @@ export default function PublicationResult({ result, platforms, images, condition
       </div>
 
       {/* Price cards */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
-        {result.precios.map((p, i) => (
-          <div key={i} className="card" style={{ padding: 18 }}>
-            <p className="section-label" style={{ marginBottom: 8 }}>{p.plataforma}</p>
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="price-display">
-                {p.moneda === "USD" ? "USD " : "$ "}
-                {p.precio_sugerido.toLocaleString("es-AR")}
-              </span>
+      {listingPlatforms.length > 0 && (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 10 }}>
+          {result.precios.map((p, i) => (
+            <div key={i} className="card" style={{ padding: 18 }}>
+              <p className="section-label" style={{ marginBottom: 8 }}>{p.plataforma}</p>
+              <div className="flex items-baseline gap-2 mb-1">
+                <span className="price-display">
+                  {p.moneda === "USD" ? "USD " : "$ "}
+                  {p.precio_sugerido.toLocaleString("es-AR")}
+                </span>
+              </div>
+              <p className="mono" style={{ fontSize: 10.5, color: "var(--text-faint)", marginBottom: 6 }}>
+                Rango: {p.moneda === "USD" ? "USD " : "$ "}
+                {p.precio_min.toLocaleString("es-AR")} – {p.precio_max.toLocaleString("es-AR")}
+              </p>
+              <p style={{ fontSize: 12, color: "var(--text-faint)", fontStyle: "italic" }}>
+                {p.justificacion}
+              </p>
             </div>
-            <p className="mono" style={{ fontSize: 10.5, color: "var(--text-faint)", marginBottom: 6 }}>
-              Rango: {p.moneda === "USD" ? "USD " : "$ "}
-              {p.precio_min.toLocaleString("es-AR")} – {p.precio_max.toLocaleString("es-AR")}
-            </p>
-            <p style={{ fontSize: 12, color: "var(--text-faint)", fontStyle: "italic" }}>
-              {p.justificacion}
-            </p>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
       {/* Platform tabs */}
       {listingPlatforms.length > 1 && (
@@ -163,7 +251,7 @@ export default function PublicationResult({ result, platforms, images, condition
         </div>
       )}
 
-      {/* Fields (only when listing platforms exist) */}
+      {/* Fields */}
       {listingPlatforms.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {activeTab === "mercadolibre" && result.mercadolibre && (<>
@@ -194,9 +282,9 @@ export default function PublicationResult({ result, platforms, images, condition
         </div>
       )}
 
-      {/* Flyer generator */}
-      {platforms.includes("flyer") && result.flyerData && (
-        <FlyerGenerator flyerData={result.flyerData} images={images} condition={condition} />
+      {/* Flyer result */}
+      {platforms.includes("flyer") && flyerHtml && (
+        <FlyerResult html={flyerHtml} title={result.flyerData?.title ?? result.producto.nombre} />
       )}
     </div>
   );
