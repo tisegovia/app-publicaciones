@@ -14,13 +14,13 @@ export function buildPrompt(
     .map((p) => {
       switch (p) {
         case "mercadolibre":
-          return `- mercadolibre: título (máx 60 chars), descripción larga en HTML, condición, precio_ars, categoría sugerida MercadoLibre Argentina, atributos (marca/modelo/etc como objeto clave-valor), array de tags`;
+          return `- mercadolibre: título (máx 60 chars), descripción larga en texto plano (sin HTML, sin markdown, solo texto y saltos de línea \\n), condición, precio_ars, categoría sugerida MercadoLibre Argentina, atributos (marca/modelo/etc como objeto clave-valor), array de tags`;
         case "amazon":
           return `- amazon: title (máx 200 chars), array de 5 bullet_points, description, array de search_terms, precio_usd (usar cotización ARS/USD = ${dollarRate}), categoría Amazon`;
         case "facebook":
-          return `- facebook: título (máx 100 chars), descripción informal y directa, precio_ars, categoría Facebook Marketplace, estado del producto, ubicacion (default "Argentina")`;
+          return `- facebook: título (máx 100 chars), descripción informal y directa en texto plano (sin HTML), precio_ars, categoría Facebook Marketplace, estado del producto, ubicacion (default "Argentina")`;
         case "olx":
-          return `- olx: título, descripción, precio_ars, categoría OLX Argentina`;
+          return `- olx: título, descripción en texto plano (sin HTML), precio_ars, categoría OLX Argentina`;
       }
     })
     .join("\n");
@@ -64,7 +64,7 @@ Devuelve ÚNICAMENTE un objeto JSON válido con esta estructura exacta:
   ],
   ${platforms.includes("mercadolibre") ? `"mercadolibre": {
     "titulo": "título máx 60 chars",
-    "descripcion": "descripción larga con formato markdown",
+    "descripcion": "descripción larga en texto plano, sin HTML ni markdown, usando \\n para saltos de línea",
     "condicion": "${condition}",
     "precio_ars": 0,
     "categoria": "categoría sugerida",
